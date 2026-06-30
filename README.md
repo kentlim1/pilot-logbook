@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pilot Logbook
+
+A simple flight logbook app built with Next.js and Supabase. Log flights, track totals (time, PIC/SIC, night, landings), and review flight history.
+
+## Features
+
+- Log flights with aircraft type, tail number, route, times, and landings/approaches
+- Auto-suggested aircraft types, tail numbers, and airports based on recent entries
+- Running totals for block time, PIC, SIC, night time, and landings
+- Flight list with a detail view per flight
+
+## Tech Stack
+
+- [Next.js](https://nextjs.org)
+- [Supabase](https://supabase.com) (Postgres + client SDK)
+- Tailwind CSS
 
 ## Getting Started
 
-First, run the development server:
+### 1. Set up Supabase
+
+Create a Supabase project, then run [supabase/schema.sql](supabase/schema.sql) in the SQL editor to create the `flights` table.
+
+> Note: the current schema grants the anon key full access to the `flights` table (no auth yet). This is intended for single-user/local use only — see the comments in `schema.sql` before deploying anywhere public.
+
+### 2. Configure environment variables
+
+Copy the example env file and fill in your Supabase project values:
+
+```bash
+cp .env.local.example .env.local
+```
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### 3. Run the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to use the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- [src/app/page.tsx](src/app/page.tsx) — home page: flight form, totals, and flight list
+- [src/app/flights/[id]/page.tsx](src/app/flights/[id]/page.tsx) — single flight detail/edit view
+- [src/components/](src/components/) — UI components (`FlightForm`, `FlightList`, `TotalsPanel`, etc.)
+- [src/lib/flights.ts](src/lib/flights.ts) — Supabase CRUD calls for flights
+- [src/lib/supabase.ts](src/lib/supabase.ts) — Supabase client setup
+- [src/types/database.ts](src/types/database.ts) — flight row/database types
+- [supabase/schema.sql](supabase/schema.sql) — database schema
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` — start the dev server
+- `npm run build` — build for production
+- `npm run start` — run the production build
+- `npm run lint` — run ESLint
