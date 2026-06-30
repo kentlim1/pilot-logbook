@@ -16,6 +16,7 @@ export type FlightRow = {
   multi_engine_time: number;
   cross_country_time: number;
   instrument_time: number;
+  is_turbine: boolean;
   day_landings: number;
   night_landings: number;
   approaches: number;

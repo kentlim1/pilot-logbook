@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FlightForm } from "@/components/FlightForm";
 import { FlightList } from "@/components/FlightList";
@@ -102,7 +103,12 @@ export default function HomePage() {
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="px-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">Totals</h2>
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Totals</h2>
+          <Link href="/stats" className="text-xs font-semibold text-blue-600">
+            Stats &amp; export →
+          </Link>
+        </div>
         <TotalsPanel flights={flights} />
       </section>
 

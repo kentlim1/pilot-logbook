@@ -66,6 +66,7 @@ export function FlightForm({ flights, flight, duplicateOf, onSubmit, submitLabel
   const [moreOpen, setMoreOpen] = useState(false);
   const [instrumentTime, setInstrumentTime] = useState(seed ? String(seed.instrument_time) : "0");
   const [approaches, setApproaches] = useState(seed?.approaches ?? 0);
+  const [isTurbine, setIsTurbine] = useState(seed?.is_turbine ?? false);
   const [remarks, setRemarks] = useState(seed?.remarks ?? "");
 
   const [saving, setSaving] = useState(false);
@@ -121,6 +122,7 @@ export function FlightForm({ flights, flight, duplicateOf, onSubmit, submitLabel
         day_landings: dayLandings,
         night_landings: nightLandings,
         approaches,
+        is_turbine: isTurbine,
         remarks: remarks.trim() || null,
       });
       if (!isEdit) {
@@ -306,6 +308,15 @@ export function FlightForm({ flights, flight, duplicateOf, onSubmit, submitLabel
             </label>
             <Stepper label="Approaches" value={approaches} onChange={setApproaches} />
           </div>
+          <label className="flex items-center gap-2.5 text-sm font-medium text-neutral-700">
+            <input
+              type="checkbox"
+              checked={isTurbine}
+              onChange={(e) => setIsTurbine(e.target.checked)}
+              className="h-5 w-5 rounded border-neutral-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
+            />
+            Turbine aircraft
+          </label>
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-neutral-500">Remarks</span>
             <textarea
