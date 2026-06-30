@@ -1,5 +1,6 @@
 export type FlightRow = {
   id: string;
+  user_id: string;
   created_at: string;
   flight_date: string; // YYYY-MM-DD
   aircraft_type: string;
@@ -21,7 +22,9 @@ export type FlightRow = {
   remarks: string | null;
 };
 
-export type FlightInsert = Omit<FlightRow, "id" | "created_at">;
+// The fields the entry form collects. user_id is attached separately by
+// createFlight() from the signed-in session, never typed in by the pilot.
+export type FlightInsert = Omit<FlightRow, "id" | "created_at" | "user_id">;
 export type FlightUpdate = Partial<FlightInsert>;
 
 export type Database = {
@@ -29,7 +32,7 @@ export type Database = {
     Tables: {
       flights: {
         Row: FlightRow;
-        Insert: FlightInsert;
+        Insert: FlightInsert & { user_id: string };
         Update: FlightUpdate;
         Relationships: [];
       };

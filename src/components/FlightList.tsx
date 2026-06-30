@@ -4,7 +4,12 @@ import Link from "next/link";
 import { formatHours } from "@/lib/time";
 import type { FlightRow } from "@/types/database";
 
-export function FlightList({ flights }: { flights: FlightRow[] }) {
+interface FlightListProps {
+  flights: FlightRow[];
+  onLogSimilar?: (flight: FlightRow) => void;
+}
+
+export function FlightList({ flights, onLogSimilar }: FlightListProps) {
   if (flights.length === 0) {
     return <p className="py-8 text-center text-sm text-neutral-500">No flights logged yet.</p>;
   }
@@ -12,11 +17,8 @@ export function FlightList({ flights }: { flights: FlightRow[] }) {
   return (
     <ul className="flex flex-col divide-y divide-neutral-100">
       {flights.map((flight) => (
-        <li key={flight.id}>
-          <Link
-            href={`/flights/${flight.id}`}
-            className="flex items-center justify-between gap-3 py-3.5 active:bg-neutral-50"
-          >
+        <li key={flight.id} className="flex items-center gap-2 py-3.5">
+          <Link href={`/flights/${flight.id}`} className="flex flex-1 items-center justify-between gap-3 active:bg-neutral-50">
             <div className="flex flex-col gap-0.5">
               <span className="text-xs font-medium text-neutral-400">{flight.flight_date}</span>
               <span className="text-base font-semibold text-neutral-900">
@@ -34,6 +36,15 @@ export function FlightList({ flights }: { flights: FlightRow[] }) {
               <span className="text-neutral-300">›</span>
             </div>
           </Link>
+          {onLogSimilar && (
+            <button
+              type="button"
+              onClick={() => onLogSimilar(flight)}
+              className="shrink-0 rounded-full border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 active:bg-blue-100"
+            >
+              Log similar
+            </button>
+          )}
         </li>
       ))}
     </ul>

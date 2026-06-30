@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { FlightForm } from "@/components/FlightForm";
-import { deleteFlight, getFlight, recentValues, updateFlight } from "@/lib/flights";
+import { deleteFlight, getFlight, updateFlight } from "@/lib/flights";
 import { useFlights } from "@/lib/useFlights";
 import type { FlightRow } from "@/types/database";
 
@@ -64,12 +64,8 @@ export default function EditFlightPage({ params }: { params: Promise<{ id: strin
         <>
           <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
             <FlightForm
+              flights={flights}
               flight={flight}
-              recentAircraftTypes={recentValues(flights, (f) => f.aircraft_type)}
-              recentTailNumbers={recentValues(flights, (f) => f.tail_number)}
-              recentAirports={recentValues(flights, (f) => f.dep_airport).concat(
-                recentValues(flights, (f) => f.arr_airport)
-              )}
               submitLabel="Save changes"
               onSubmit={async (updated) => {
                 await updateFlight(id, updated);

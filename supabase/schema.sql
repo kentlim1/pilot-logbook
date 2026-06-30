@@ -37,9 +37,34 @@ create index if not exists flights_flight_date_idx on public.flights (flight_dat
 
 alter table public.flights enable row level security;
 
--- Phase 1 is single-user with no login: allow the anon key full access.
--- Replace with per-user policies once Supabase Auth is added (Phase 3).
-create policy "anon full access" on public.flights
-  for all
-  using (true)
-  with check (true);
+-- Phase 3: Supabase Auth + per-user RLS. Re-running this whole file is safe.
+
+alter table public.flights add column if not exists user_id uuid references auth.users(id) on delete cascade;
+
+create index if not exists flights_user_id_idx on public.flights (user_id);
+
+drop policy if exists "anon full access" on public.flights;
+drop policy if exists "select own flights" on public.flights;
+drop policy if exists "insert own flights" on public.flights;
+drop policy if exists "update own flights" on public.flights;
+drop policy if exists "delete own flights" on public.flights;
+
+create policy "select own flights" on public.flights
+  for select using (auth.uid() = user_id);
+
+create policy "insert own flights" on public.flights
+  for insert with check (auth.uid() = user_id);
+
+create policy "update own flights" on public.flights
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "delete own flights" on public.flights
+  for delete using (auth.uid() = user_id);
+
+-- Flights logged in Phase 1/2 (before auth existed) have no owner yet, so RLS
+-- hides them from everyone until claimed. After creating your account, find
+-- your user id with `select id, email from auth.users;`, then run:
+--   update public.flights set user_id = '<your-user-id>' where user_id is null;
+
+-- Phase 3: milestone tracking needs to tell turbine time apart from piston time.
+alter table public.flights add column if not exists is_turbine boolean not null default false;

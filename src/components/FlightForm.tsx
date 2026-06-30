@@ -1,60 +1,85 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChipField } from "@/components/ChipField";
 import { Stepper } from "@/components/Stepper";
 import { TimeField } from "@/components/TimeField";
+import {
+  mostFrequentValue,
+  mostRecentTailNumber,
+  rankedArrivalsForDeparture,
+  rankedValues,
+} from "@/lib/flights";
 import { computeBlockHours, digitsToTimeString, timeStringToDigits, todayIsoDate } from "@/lib/time";
 import type { FlightInsert, FlightRow } from "@/types/database";
 
 interface FlightFormProps {
-  flight?: FlightRow;
-  recentAircraftTypes: string[];
-  recentTailNumbers: string[];
-  recentAirports: string[];
+  flights: FlightRow[];
+  flight?: FlightRow; // editing this record in place
+  duplicateOf?: FlightRow; // seed values for a new entry; date always resets to today
   onSubmit: (flight: FlightInsert) => Promise<void>;
   submitLabel: string;
 }
 
-export function FlightForm({
-  flight,
-  recentAircraftTypes,
-  recentTailNumbers,
-  recentAirports,
-  onSubmit,
-  submitLabel,
-}: FlightFormProps) {
+export function FlightForm({ flights, flight, duplicateOf, onSubmit, submitLabel }: FlightFormProps) {
   const isEdit = !!flight;
+  // Editing or duplicating both start from known values; only a genuinely blank form gets defaults.
+  const seed = flight ?? duplicateOf;
+  const carriesOverrides = !!seed;
+
+  const recentAircraftTypes = useMemo(() => rankedValues(flights, (f) => f.aircraft_type), [flights]);
+  const recentTailNumbers = useMemo(() => rankedValues(flights, (f) => f.tail_number), [flights]);
+  const recentAirports = useMemo(() => {
+    const dep = rankedValues(flights, (f) => f.dep_airport);
+    const arr = rankedValues(flights, (f) => f.arr_airport);
+    return Array.from(new Set([...dep, ...arr]));
+  }, [flights]);
+
+  const defaultAircraftType = useMemo(() => mostFrequentValue(flights, (f) => f.aircraft_type), [flights]);
+  const defaultTailNumber = useMemo(
+    () => (defaultAircraftType ? mostRecentTailNumber(flights, defaultAircraftType) : null),
+    [flights, defaultAircraftType]
+  );
 
   const [flightDate, setFlightDate] = useState(flight?.flight_date ?? todayIsoDate());
-  const [aircraftType, setAircraftType] = useState(flight?.aircraft_type ?? "");
-  const [tailNumber, setTailNumber] = useState(flight?.tail_number ?? "");
-  const [depAirport, setDepAirport] = useState(flight?.dep_airport ?? "");
-  const [arrAirport, setArrAirport] = useState(flight?.arr_airport ?? "");
-  const [outRaw, setOutRaw] = useState(timeStringToDigits(flight?.out_time ?? null));
-  const [inRaw, setInRaw] = useState(timeStringToDigits(flight?.in_time ?? null));
+  const [aircraftType, setAircraftType] = useState(seed?.aircraft_type ?? defaultAircraftType ?? "");
+  const [tailNumber, setTailNumber] = useState(seed?.tail_number ?? defaultTailNumber ?? "");
+  const [depAirport, setDepAirport] = useState(seed?.dep_airport ?? "");
+  const [arrAirport, setArrAirport] = useState(seed?.arr_airport ?? "");
+  const [outRaw, setOutRaw] = useState(timeStringToDigits(seed?.out_time ?? null));
+  const [inRaw, setInRaw] = useState(timeStringToDigits(seed?.in_time ?? null));
 
-  const [blockOverride, setBlockOverride] = useState(flight ? String(flight.block_time) : "");
-  const [meOverride, setMeOverride] = useState(flight ? String(flight.multi_engine_time) : "");
-  const [xcOverride, setXcOverride] = useState(flight ? String(flight.cross_country_time) : "");
-  const [blockTouched, setBlockTouched] = useState(isEdit);
-  const [meTouched, setMeTouched] = useState(isEdit);
-  const [xcTouched, setXcTouched] = useState(isEdit);
+  const [blockOverride, setBlockOverride] = useState(seed ? String(seed.block_time) : "");
+  const [meOverride, setMeOverride] = useState(seed ? String(seed.multi_engine_time) : "");
+  const [xcOverride, setXcOverride] = useState(seed ? String(seed.cross_country_time) : "");
+  const [blockTouched, setBlockTouched] = useState(carriesOverrides);
+  const [meTouched, setMeTouched] = useState(carriesOverrides);
+  const [xcTouched, setXcTouched] = useState(carriesOverrides);
 
   const [crewRole, setCrewRole] = useState<"SIC" | "PIC">(
-    flight && flight.pic_time > 0 && flight.pic_time >= flight.sic_time ? "PIC" : "SIC"
+    seed && seed.pic_time > 0 && seed.pic_time >= seed.sic_time ? "PIC" : "SIC"
   );
-  const [nightTime, setNightTime] = useState(flight ? String(flight.night_time) : "0");
-  const [dayLandings, setDayLandings] = useState(flight?.day_landings ?? 1);
-  const [nightLandings, setNightLandings] = useState(flight?.night_landings ?? 0);
+  const [nightTime, setNightTime] = useState(seed ? String(seed.night_time) : "0");
+  const [dayLandings, setDayLandings] = useState(seed?.day_landings ?? 1);
+  const [nightLandings, setNightLandings] = useState(seed?.night_landings ?? 0);
 
   const [moreOpen, setMoreOpen] = useState(false);
-  const [instrumentTime, setInstrumentTime] = useState(flight ? String(flight.instrument_time) : "0");
-  const [approaches, setApproaches] = useState(flight?.approaches ?? 0);
-  const [remarks, setRemarks] = useState(flight?.remarks ?? "");
+  const [instrumentTime, setInstrumentTime] = useState(seed ? String(seed.instrument_time) : "0");
+  const [approaches, setApproaches] = useState(seed?.approaches ?? 0);
+  const [remarks, setRemarks] = useState(seed?.remarks ?? "");
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Arrival airports most often paired with the chosen departure, surfaced ahead of the general list.
+  const routeArrivals = useMemo(
+    () => (depAirport.trim() ? rankedArrivalsForDeparture(flights, depAirport.trim().toUpperCase()) : []),
+    [flights, depAirport]
+  );
+  const arrAirportChips = useMemo(
+    () => (routeArrivals.length > 0 ? Array.from(new Set([...routeArrivals, ...recentAirports])) : recentAirports),
+    [routeArrivals, recentAirports]
+  );
 
   // Block/multi-engine/cross-country time default to the out/in computed duration
   // until the pilot overrides them by hand.
@@ -99,9 +124,8 @@ export function FlightForm({
         remarks: remarks.trim() || null,
       });
       if (!isEdit) {
-        // Reset for the next entry; keep date since back-to-back legs share a day.
-        setAircraftType("");
-        setTailNumber("");
+        // Reset for the next entry; keep date and aircraft/tail since back-to-back
+        // legs are usually the same plane on the same day.
         setDepAirport("");
         setArrAirport("");
         setOutRaw("");
@@ -163,7 +187,7 @@ export function FlightForm({
           label="To"
           value={arrAirport}
           onChange={setArrAirport}
-          recentValues={recentAirports}
+          recentValues={arrAirportChips}
           placeholder="ICAO"
           uppercase
           maxLength={4}
